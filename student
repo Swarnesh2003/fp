@@ -1,0 +1,67 @@
+-- Q3.hs — Student Academic Performance Report
+
+module Main where
+import System.IO (isEOF)
+
+type Student = (String, Int)
+
+sampleStudents :: [Student]
+sampleStudents =
+  [("John",35),("Mary",78),("Paul",60),("Lucy",85),("Sam",55)]
+
+-- Split on a character
+split :: Char -> String -> [String]
+split _ [] = [""]
+split c (x:xs)
+  | x == c    = "" : rest
+  | otherwise = (x : head rest) : tail rest
+  where
+    rest = split c xs
+
+-- Parse "Name:Marks"
+parseStudent :: String -> Student
+parseStudent s =
+  case split ':' s of
+    [nm,m] -> (nm, read m)
+    _      -> error "Bad line. Use Name:Marks"
+
+-- Classification by marks
+classify :: Int -> String
+classify m
+  | m < 40    = "Fail"
+  | m < 60    = "Pass"
+  | m < 80    = "Merit"
+  | otherwise = "Distinction"
+
+-- Categorize students with grade labels
+categorize :: [Student] -> [(String,Int,String)]
+categorize [] = []
+categorize ((name,mark):xs) =
+  (name, mark, classify mark) : categorize xs
+
+-- Count passing students
+countPasses :: [Student] -> Int
+countPasses [] = 0
+countPasses ((_,mark):xs)
+  | mark >= 40 = 1 + countPasses xs
+  | otherwise  = countPasses xs
+
+-- Read until EOF (works in online compilers)
+getLines :: IO [String]
+getLines = do
+  eof <- isEOF
+  if eof
+    then return []
+    else do ln <- getLine
+            rest <- getLines
+            return (ln : rest)
+
+main :: IO ()
+main = do
+  ls <- getLines
+  let students   = if null ls then sampleStudents else map parseStudent ls
+      categorized = categorize students
+      passCount   = countPasses students
+  putStrLn "Student Academic Performance Report"
+  mapM_ print categorized
+  putStrLn $ "Total Passed: " ++ show passCount
