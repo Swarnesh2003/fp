@@ -1,0 +1,58 @@
+-- Q2.hs — Cinema Ticket Sales Report
+
+module Main where
+import System.IO (isEOF)
+
+type Sale = (String, Int)
+
+sampleSales :: [Sale]
+sampleSales =
+  [("Adult",5),("Child",3),("Senior",2),("Adult",4)]
+
+-- Split string on a character
+split :: Char -> String -> [String]
+split _ [] = [""]
+split c (x:xs)
+  | x == c    = "" : rest
+  | otherwise = (x : head rest) : tail rest
+  where
+    rest = split c xs
+
+-- Parse a line like "Adult:5" into a Sale
+parseSale :: String -> Sale
+parseSale s =
+  case split ':' s of
+    [cat,q] -> (cat, read q)
+    _       -> error "Bad line. Use Category:Quantity"
+
+-- Recursive sum of sales
+sumSales :: [Sale] -> (Int,Int,Int,Int)
+sumSales [] = (0,0,0,0)
+sumSales ((cat,qty):xs) =
+  let (a,c,s,revenue) = sumSales xs
+  in case cat of
+       "Adult"  -> (a+qty, c,     s,     revenue + qty*12)
+       "Child"  -> (a,     c+qty, s,     revenue + qty*8)
+       "Senior" -> (a,     c,     s+qty, revenue + qty*10)
+       _        -> (a,     c,     s,     revenue)
+
+-- Read until EOF (works in online compilers)
+getLines :: IO [String]
+getLines = do
+  eof <- isEOF
+  if eof
+    then return []
+    else do ln <- getLine
+            rest <- getLines
+            return (ln : rest)
+
+main :: IO ()
+main = do
+  ls <- getLines
+  let sales = if null ls then sampleSales else map parseSale ls
+      (a,c,s,revenue) = sumSales sales
+  putStrLn "Cinema Ticket Sales Report"
+  putStrLn $ "Adult tickets:  " ++ show a
+  putStrLn $ "Child tickets:  " ++ show c
+  putStrLn $ "Senior tickets: " ++ show s
+  putStrLn $ "Total revenue: $" ++ show revenue
